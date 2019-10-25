@@ -1,0 +1,283 @@
+(Diabetes project cide)
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+%matplotlib inline
+Pima = pd.read_csv('Pima.csv')
+print(Pima.columns)
+Pima.describe()
+n_true = len(Pima.loc[Pima['Outcome'] == True])
+n_false = len(Pima.loc[Pima['Outcome'] == False])
+print("Number of true cases: {0} ({1:2.2f}%)".format(n_true, (n_true / (n_true + n_true)) * 100))
+print("Number of false cases: {0} ({1:2.2f}%)".format(n_false, (n_false / (n_true + n_false)) * 100))
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(Pima.loc[:, Pima.columns != 'Outcome'], Pima['Outcome'], stratify=Pima['Outcome'], random_state=66)
+
+# used logistic regression for training accuracy
+from sklearn.linear_model import LogisticRegression
+lr_clf = LogisticRegression(C=.14, random_state=52)
+lr_clf.fit(X_train,y_train)
+
+y_pred_lr =lr_clf.predict(X_train)
+from sklearn.metrics import accuracy_score
+lr_result = accuracy_score(y_train,y_pred_lr)
+print("Accuracy :",lr_result)
+
+# code for testing accuracy
+y_pred_lr =lr_clf.predict(X_test)
+from sklearn.metrics import accuracy_score
+lr_result = accuracy_score(y_test,y_pred_lr)
+print("Accuracy :",lr_result)
+
+# Making the Confusion Matrix
+from sklearn.metrics import confusion_matrix
+cm_lr = confusion_matrix(y_test, y_pred_lr)
+cm_lr
+
+#  Precision recll
+recall_lr = cm_lr[0][0]/(cm_lr[0][0] + cm_lr[0][1])
+precision_lr = cm_lr[0][0]/(cm_lr[0][0]+cm_lr[1][1])
+recall_lr,precision_lr
+
+# classification report
+from sklearn.metrics import classification_report
+print(classification_report(y_test, y_pred_lr))
+
+#  ploting confusion matrix
+from mlxtend.plotting import plot_confusion_matrix
+import matplotlib.pyplot as plt
+import numpy as np
+binary = np.array(cm_lr)
+
+fig, ax = plot_confusion_matrix(conf_mat=binary,
+                                show_absolute=True,
+                                show_normed=True,
+                                colorbar=True)
+plt.show()
+
+# Roc curve 
+
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_curve
+logit_roc_auc = roc_auc_score(y_test, lr_clf.predict(X_test))
+fpr, tpr, thresholds = roc_curve(y_test, lr_clf.predict_proba(X_test)[:,1])
+plt.figure()
+plt.plot(fpr, tpr, label='Logistic Regression (area = %0.2f)' % logit_roc_auc)
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic')
+plt.legend(loc="lower right")
+
+# Precision recall curve
+
+from sklearn.metrics import precision_recall_curve 
+precision, recall, thresholds = precision_recall_curve(y_test, y_pred_lr)
+# create plot
+plt.plot(precision, recall, label='Precision-recall curve')
+_ = plt.xlabel('Precision')
+_ = plt.ylabel('Recall')
+_ = plt.title('Precision-recall curve')
+_ = plt.legend(loc="lower left")
+plt.savefig('Log_ROC')
+plt.show()
+
+# 2 using k-nearest neighbur knn technique
+from sklearn.neighbors import KNeighborsClassifier
+knn_clf = KNeighborsClassifier(n_neighbors =5,n_jobs = -1,leaf_size = 60,algorithm='brute')
+knn_clf.fit(X_train,y_train)
+
+# for training accuracy 
+y_pred_knn =knn_clf.predict(X_train)
+from sklearn.metrics import accuracy_score
+knn_result = accuracy_score(y_train,y_pred_knn)
+knn_result
+# for testing accuracy
+y_pred_knn =knn_clf.predict(X_test)
+from sklearn.metrics import accuracy_score
+knn_result = accuracy_score(y_test,y_pred_knn)
+knn_result
+
+# confusion matrix
+# Making the Confusion Matrix
+from sklearn.metrics import confusion_matrix
+cm_knn = confusion_matrix(y_test, y_pred_knn)
+cm_knn
+
+recall_knn = cm_knn[0][0]/(cm_knn[0][0] + cm_knn[0][1])
+precision_knn = cm_knn[0][0]/(cm_knn[0][0]+cm_knn[1][1])
+
+from sklearn.metrics import classification_report
+print(classification_report(y_test, y_pred_knn))
+
+from mlxtend.plotting import plot_confusion_matrix
+import matplotlib.pyplot as plt
+import numpy as np
+binary = np.array(cm_knn)
+
+fig, ax = plot_confusion_matrix(conf_mat=binary,
+                                show_absolute=True,
+                                show_normed=True,
+                                colorbar=True)
+plt.show()
+
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_curve
+knn_roc_auc = roc_auc_score(y_test, knn_clf.predict(X_test))
+fpr, tpr, thresholds = roc_curve(y_test, knn_clf.predict_proba(X_test)[:,1])
+plt.figure()
+plt.plot(fpr, tpr, label='knn (area = %0.2f)' % knn_roc_auc)
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic')
+plt.legend(loc="lower right")
+plt.savefig('knn_ROC')
+plt.show()
+
+from sklearn.metrics import precision_recall_curve 
+
+precision, recall, thresholds = precision_recall_curve(y_test, y_pred_knn)
+# create plot
+plt.plot(precision, recall, label='Precision-recall curve')
+plt.xlabel('Precision')
+plt.ylabel('Recall')
+plt.title('Precision-recall curve')
+plt.legend(loc="lower left")
+
+# 3 multilayer perceptron(mlp)
+from sklearn.metrics import make_scorer, accuracy_score
+from sklearn.model_selection import GridSearchCV
+from sklearn.neural_network import MLPClassifier
+ann_clf = MLPClassifier()
+
+#Parameters
+parameters = {'solver': ['lbfgs'],
+             'alpha':[1e-4],
+             'hidden_layer_sizes':(9,14,14,2),   # 9 input, 14-14 neuron in 2 layers,1 output layer
+             'random_state': [1]}
+
+acc_scorer = make_scorer(accuracy_score)
+
+# Run grid search 
+grid_obj = GridSearchCV(ann_clf, parameters, scoring=acc_scorer)
+grid_obj = grid_obj.fit(X_train, y_train)
+
+# Pick the best combination of parameters
+ann_clf = grid_obj.best_estimator_
+# Fit the best algorithm to the data 
+ann_clf.fit(X_train, y_train)
+y_pred_ann =ann_clf.predict(X_train)
+from sklearn.metrics import accuracy_score
+ann_result = accuracy_score(y_train,y_pred_ann)
+print("Accuracy :",ann_result)
+y_pred_ann =ann_clf.predict(X_test)
+from sklearn.metrics import accuracy_score
+ann_result = accuracy_score(y_test,y_pred_ann)
+print("Accuracy :",ann_result)
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_curve
+ann_roc_auc = roc_auc_score(y_test, ann_clf.predict(X_test))
+fpr, tpr, thresholds = roc_curve(y_test, ann_clf.predict_proba(X_test)[:,1])
+plt.figure()
+plt.plot(fpr, tpr, label='ann (area = %0.2f)' % ann_roc_auc)
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic')
+plt.legend(loc="lower right")
+plt.savefig('ann_ROC')
+plt.show()
+from sklearn.neural_network import MLPClassifier
+mlp_clf = MLPClassifier(hidden_layer_sizes=(30,30,30))
+mlp_clf.fit(X_train, y_train)
+y_pred_mlp =mlp_clf.predict(X_train)
+from sklearn.metrics import accuracy_score
+mlp_result = accuracy_score(y_train,y_pred_mlp)
+print("Accuracy :",mlp_result)
+y_pred_mlp =ann_clf.predict(X_train)
+from sklearn.metrics import accuracy_score
+mlp_result = accuracy_score(y_train,y_pred_mlp)
+print("Accuracy :",mlp_result)
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_curve
+mlp_roc_auc = roc_auc_score(y_test, mlp_clf.predict(X_test))
+fpr, tpr, thresholds = roc_curve(y_test, ann_clf.predict_proba(X_test)[:,1])
+plt.figure()
+plt.plot(fpr, tpr, label='mlp (area = %0.2f)' % mlp_roc_auc)
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic')
+plt.legend(loc="lower right")
+plt.savefig('mlp_ROC')
+plt.show()
+
+# 4 support vector machine 
+from sklearn import svm
+svm_clf = svm.SVC(kernel='rbf', gamma=0.0001, C=100,probability=True)
+svm_clf.fit(X_train,y_train)
+y_pred_svm =svm_clf.predict(X_train)
+from sklearn.metrics import accuracy_score
+svm_result = accuracy_score(y_train,y_pred_svm)
+print("Accuracy :",svm_result)
+y_pred_svm =svm_clf.predict(X_test)
+from sklearn.metrics import accuracy_score
+svm_result = accuracy_score(y_test,y_pred_svm)
+print("Accuracy :",svm_result)
+# Making the Confusion Matrix
+from sklearn.metrics import confusion_matrix
+cm_svm = confusion_matrix(y_test, y_pred_svm)
+cm_svm
+from mlxtend.plotting import plot_confusion_matrix
+import matplotlib.pyplot as plt
+import numpy as np
+binary = np.array(cm_svm)
+
+fig, ax = plot_confusion_matrix(conf_mat=binary,
+                                show_absolute=True,
+                                show_normed=True,
+                                colorbar=True)
+plt.show()
+recall_svm = cm_svm[0][0]/(cm_svm[0][0] + cm_svm[0][1])
+precision_svm = cm_svm[0][0]/(cm_svm[0][0]+cm_svm[1][1])
+recall_svm,precision_svm
+from sklearn.metrics import classification_report
+print(classification_report(y_test, y_pred_svm))
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_curve
+svm_roc_auc = roc_auc_score(y_test, svm_clf.predict(X_test))
+fpr, tpr, thresholds = roc_curve(y_test, svm_clf.predict_proba(X_test)[:,1])
+plt.figure()
+plt.plot(fpr, tpr, label='svm (area = %0.2f)' % svm_roc_auc)
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic')
+plt.legend(loc="lower right")
+plt.savefig('svm_ROC')
+plt.show()
+from sklearn.metrics import precision_recall_curve 
+
+precision, recall, thresholds = precision_recall_curve(y_test, y_pred_svm)
+# create plot
+plt.plot(precision, recall, label='Precision-recall curve')
+_ = plt.xlabel('Precision')
+_ = plt.ylabel('Recall')
+_ = plt.title('Precision-recall curve')
+_ = plt.legend(loc="lower left")
+
+
+recall_knn,precision_knn
